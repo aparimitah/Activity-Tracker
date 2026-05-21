@@ -2,12 +2,12 @@
   "name": "Activity Tracker",
   "short_name": "ActivityTracker",
   "description": "Track your daily, weekly and monthly activities with alarms and dashboard",
-  "start_url": "/ActivityTracker.html",
+  "start_url": "/Activity-Tracker/index.html",
   "display": "standalone",
   "background_color": "#0f0f1a",
   "theme_color": "#6c63ff",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/Activity-Tracker/",
   "lang": "en",
   "icons": [
     {
@@ -30,13 +30,13 @@
       "name": "Today's Activities",
       "short_name": "Today",
       "description": "View today's activities",
-      "url": "/ActivityTracker.html#dashboard"
+      "url": "/Activity-Tracker/index.html#dashboard"
     },
     {
       "name": "Add Activity",
       "short_name": "Add",
       "description": "Add a new activity",
-      "url": "/ActivityTracker.html#add"
+      "url": "/Activity-Tracker/index.html#add"
     }
   ]
 }
