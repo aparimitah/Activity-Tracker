@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6c63ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ActivityTracker">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="ActivityTracker">
+<meta name="description" content="Track daily, weekly & monthly activities with alarms and dashboard">
+<title>Activity Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --bg2: #1a1a2e;
+    --bg3: #252540;
+    --card: #1e1e35;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --accent4: #f9ca24;
+    --text: #e8e8f0;
+    --text2: #9999bb;
+    --text3: #6666aa;
+    --border: rgba(108,99,255,0.2);
+    --success: #43e97b;
+    --warning: #f9ca24;
+    --danger: #ff6584;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; }
+  
+  /* App Shell */
+  #app { display:flex; flex-direction:column; height:100vh; max-width:480px; margin:0 auto; position:relative; }
+  
+  /* Header */
+  .header { background:var(--bg2); padding:16px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .header h1 { font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .header-date { font-size:12px; color:var(--text3); }
+  .streak-badge { background:linear-gradient(135deg,#f9ca24,#f0932b); border-radius:20px; padding:4px 10px; font-size:12px; font-weight:700; color:#1a1a2e; display:flex; align-items:center; gap:4px; }
+  
+  /* Nav Tabs */
+  .nav-tabs { display:flex; background:var(--bg2); border-bottom:1px solid var(--border); flex-shrink:0; overflow-x:auto; scrollbar-width:none; }
+  .nav-tabs::-webkit-scrollbar { display:none; }
+  .nav-tab { flex:1; min-width:60px; padding:10px 4px; text-align:center; font-size:11px; font-weight:600; color:var(--text3); border-bottom:2px solid transparent; cursor:pointer; transition:all .2s; white-space:nowrap; }
+  .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .nav-tab svg { display:block; margin:0 auto 3px; width:18px; height:18px; }
+  
+  /* Screens */
+  .screen { flex:1; overflow-y:auto; display:none; padding:16px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+  .screen.active { display:block; }
+  .screen::-webkit-scrollbar { width:4px; }
+  .screen::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  
+  /* Cards */
+  .card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:16px; margin-bottom:12px; }
+  .card-sm { background:var(--bg3); border-radius:var(--radius-sm); border:1px solid var(--border); padding:12px; margin-bottom:8px; }
+  
+  /* Buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 18px; border-radius:var(--radius-sm); font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all .2s; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#7c75ff; transform:translateY(-1px); }
+  .btn-primary:active { transform:scale(0.97); }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-success { background:var(--success); color:#1a1a2e; }
+  .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border); }
+  .btn-sm { padding:6px 12px; font-size:12px; }
+  .btn-full { width:100%; }
+  
+  /* Form */
+  .form-group { margin-bottom:14px; }
+  .form-label { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:.5px; }
+  .form-input, .form-select { width:100%; background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:var(--radius-sm); padding:10px 14px; font-size:14px; outline:none; appearance:none; -webkit-appearance:none; }
+  .form-input:focus, .form-select:focus { border-color:var(--accent); }
+  .form-select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c63ff' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:36px; }
+  .freq-chips { display:flex; gap:8px; flex-wrap:wrap; }
+  .freq-chip { padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:var(--bg3); transition:all .2s; }
+  .freq-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  
+  /* Activity Item */
+  .activity-item { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:14px 16px; margin-bottom:10px; display:flex; align-items:flex-start; gap:12px; transition:all .2s; cursor:pointer; position:relative; overflow:hidden; }
+  .activity-item::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+  .activity-item.daily::before { background:var(--accent); }
+  .activity-item.weekly::before { background:var(--accent3); }
+  .activity-item.monthly::before { background:var(--accent4); }
+  .activity-item:active { transform:scale(0.98); }
+  .activity-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .activity-info { flex:1; min-width:0; }
+  .activity-name { font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .activity-meta { font-size:12px; color:var(--text3); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .freq-badge { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .freq-badge.daily { background:rgba(108,99,255,0.2); color:var(--accent); }
+  .freq-badge.weekly { background:rgba(67,233,123,0.2); color:var(--accent3); }
+  .freq-badge.monthly { background:rgba(249,202,36,0.2); color:var(--accent4); }
+  .done-toggle { width:32px; height:32px; border-radius:50%; border:2px solid var(--border); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+  .done-toggle.done { background:var(--success); border-color:var(--success); }
+  .done-toggle svg { width:16px; height:16px; stroke:#fff; fill:none; }
+  
+  /* Dashboard Stats */
+  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .stat-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:14px; text-align:center; }
+  .stat-val { font-size:28px; font-weight:800; }
+  .stat-lbl { font-size:11px; color:var(--text3); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+  .stat-sub { font-size:11px; margin-top:2px; }
+  .stat-val.green { color:var(--success); }
+  .stat-val.purple { color:var(--accent); }
+  .stat-val.yellow { color:var(--accent4); }
+  .stat-val.pink { color:var(--accent2); }
+  
+  /* Progress Ring */
+  .progress-ring-wrap { display:flex; justify-content:center; margin-bottom:14px; }
+  .ring-container { position:relative; width:120px; height:120px; }
+  .ring-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .ring-pct { font-size:24px; font-weight:800; color:var(--text); }
+  .ring-sub { font-size:11px; color:var(--text3); }
+  
+  /* Calendar */
+  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .cal-nav { background:var(--bg3); border:1px solid var(--border); color:var(--text); border-radius:var(--radius-sm); width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; }
+  .cal-title { font-size:16px; font-weight:700; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day-hdr { text-align:center; font-size:11px; font-weight:600; color:var(--text3); padding:4px 0; }
+  .cal-day { aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; cursor:pointer; position:relative; transition:all .2s; border:1px solid transparent; }
+  .cal-day:empty { background:transparent; cursor:default; }
+  .cal-day.today { border-color:var(--accent); color:var(--accent); }
+  .cal-day.selected { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .cal-day.has-done::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--success); }
+  .cal-day.has-missed::after { background:var(--danger); }
+  .cal-day.has-both::after { background:var(--accent4); }
+  .cal-day:not(:empty):hover { background:var(--bg3); }
+  
+  /* Alarm Badge */
+  .alarm-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; background:rgba(249,202,36,0.15); border-radius:10px; font-size:11px; color:var(--accent4); }
+  
+  /* Section Title */
+  .section-title { font-size:13px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  
+  /* Filter Row */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  .filter-row::-webkit-scrollbar { display:none; }
+  .filter-chip { padding:7px 14px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); color:var(--text2); background:var(--bg3); white-space:nowrap; transition:all .2s; flex-shrink:0; }
+  .filter-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  
+  /* Progress Bar */
+  .prog-wrap { background:var(--bg3); border-radius:20px; height:8px; overflow:hidden; margin-top:8px; }
+  .prog-fill { height:100%; border-radius:20px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+  
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none; align-items:flex-end; justify-content:center; z-index:100; backdrop-filter:blur(4px); }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--bg2); border-radius:20px 20px 0 0; border-top:1px solid var(--border); border-left:1px solid var(--border); border-right:1px solid var(--border); padding:24px 20px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; animation:slideUp .3s ease; }
+  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 20px; }
+  .modal-title { font-size:18px; font-weight:700; margin-bottom:20px; }
+  
+  /* Toast */
+  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 18px; font-size:13px; font-weight:600; z-index:200; opacity:0; transition:all .3s; pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  
+  /* FAB */
+  .fab { position:fixed; bottom:76px; right:20px; width:52px; height:52px; border-radius:50%; background:var(--accent); color:#fff; border:none; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(108,99,255,0.5); transition:all .2s; z-index:50; }
+  .fab:hover { transform:scale(1.1); }
+  .fab:active { transform:scale(0.95); }
+  
+  /* Bottom Nav */
+  .bottom-nav { background:var(--bg2); border-top:1px solid var(--border); display:flex; padding:8px 0 max(8px, env(safe-area-inset-bottom)); flex-shrink:0; }
+  .bnav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px; cursor:pointer; color:var(--text3); font-size:10px; font-weight:600; transition:color .2s; }
+  .bnav-item.active { color:var(--accent); }
+  .bnav-item svg { width:22px; height:22px; }
+  
+  /* Emoji picker */
+  .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; max-height:160px; overflow-y:auto; }
+  .emoji-btn { font-size:22px; padding:4px; border-radius:6px; cursor:pointer; text-align:center; background:var(--bg3); border:1px solid transparent; transition:all .15s; }
+  .emoji-btn:hover { border-color:var(--accent); }
+  .emoji-btn.selected { border-color:var(--accent); background:rgba(108,99,255,0.2); }
+  
+  /* Range picker */
+  .range-row { display:flex; gap:8px; }
+  .range-row .form-input { flex:1; }
+  
+  /* Activity detail */
+  .history-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .history-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .history-dot.done { background:var(--success); }
+  .history-dot.missed { background:var(--danger); }
+  
+  /* Insight cards */
+  .insight-card { background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(255,101,132,0.15)); border:1px solid rgba(108,99,255,0.3); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start; }
+  .insight-icon { font-size:28px; }
+  .insight-text { font-size:13px; line-height:1.5; color:var(--text2); }
+  .insight-text strong { color:var(--text); }
+  
+  /* Heatmap */
+  .heatmap { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .heat-cell { aspect-ratio:1; border-radius:3px; background:var(--bg3); }
+  .heat-cell.l1 { background:rgba(108,99,255,0.25); }
+  .heat-cell.l2 { background:rgba(108,99,255,0.5); }
+  .heat-cell.l3 { background:rgba(108,99,255,0.75); }
+  .heat-cell.l4 { background:var(--accent); }
+  
+  /* Alarm list */
+  .alarm-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .alarm-time { font-size:22px; font-weight:700; color:var(--text); min-width:70px; }
+  .alarm-info { flex:1; }
+  .alarm-toggle { width:44px; height:24px; background:var(--bg3); border-radius:12px; position:relative; cursor:pointer; transition:background .2s; border:1px solid var(--border); }
+  .alarm-toggle.on { background:var(--accent); border-color:var(--accent); }
+  .alarm-toggle::after { content:''; position:absolute; width:20px; height:20px; background:#fff; border-radius:50%; top:1px; left:1px; transition:left .2s; }
+  .alarm-toggle.on::after { left:21px; }
+  
+  /* Scrollbar for screens */
+  .screen { padding-bottom: 20px; }
+</style>
+</head>
+<body>
+<div id="app">
+  
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>ActivityTracker</h1>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div class="streak-badge" id="streakBadge">🔥 0 days</div>
+  </div>
+  
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="bnav-item active" onclick="switchScreen('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="bnav-item" onclick="switchScreen('activities')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Activities
+    </div>
+    <div class="bnav-item" onclick="switchScreen('calendar')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendar
+    </div>
+    <div class="bnav-item" onclick="switchScreen('alarms')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Alarms
+    </div>
+    <div class="bnav-item" onclick="switchScreen('insights')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M5 20V10l7-7 7 7v10"/></svg>
+      Insights
+    </div>
+  </div>
+  
+  <!-- DASHBOARD SCREEN -->
+  <div class="screen active" id="screen-dashboard">
+    <!-- Date Filter -->
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="setDashFilter('today',this)">Today</div>
+      <div class="filter-chip" onclick="setDashFilter('week',this)">This Week</div>
+      <div class="filter-chip" onclick="setDashFilter('month',this)">This Month</div>
+      <div class="filter-chip" onclick="setDashFilter('custom',this)">Custom Range</div>
+    </div>
+    
+    <!-- Custom Range -->
+    <div id="customRangeBox" style="display:none; margin-bottom:14px;">
+      <div class="range-row">
+        <input type="date" class="form-input" id="rangeFrom" onchange="renderDashboard()">
+        <input type="date" class="form-input" id="rangeTo" onchange="renderDashboard()">
+      </div>
+    </div>
+    
+    <!-- Progress Ring -->
+    <div class="card" style="padding:20px;">
+      <div class="progress-ring-wrap">
+        <div class="ring-container">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(108,99,255,0.15)" stroke-width="10"/>
+            <circle id="ringCircle" cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease;"/>
+          </svg>
+          <div class="ring-label">
+            <div class="ring-pct" id="ringPct">0%</div>
+            <div class="ring-sub" id="ringPeriod">Today</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val green" id="statDone">0</div>
+          <div class="stat-lbl">Done</div>
+          <div class="stat-sub" style="color:var(--success);">✓ Completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val pink" id="statMissed">0</div>
+          <div class="stat-lbl">Missed</div>
+          <div class="stat-sub" style="color:var(--danger);">✗ Not Done</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val purple" id="statTotal">0</div>
+          <div class="stat-lbl">Total</div>
+          <div class="stat-sub" style="color:var(--text3);">Activities</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val yellow" id="statStreak">0</div>
+          <div class="stat-lbl">Streak</div>
+          <div class="stat-sub" style="color:var(--accent4);">🔥 Days</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Category Breakdown -->
+    <div id="categoryBreakdown"></div>
+    
+    <!-- Pending Today -->
+    <div class="section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Pending Activities
+    </div>
+    <div id="pendingList"></div>
+  </div>
+  
+  <!-- ACTIVITIES SCREEN -->
+  <div class="screen" id="screen-activities">
+    <!-- Freq Filter -->
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="setActFilter('all',this)">All</div>
+      <div class="filter-chip" onclick="setActFilter('daily',this)">Daily</div>
+      <div class="filter-chip" onclick="setActFilter('weekly',this)">Weekly</div>
+      <div class="filter-chip" onclick="setActFilter('monthly',this)">Monthly</div>
+    </div>
+    
+    <div id="activitiesList"></div>
+    <div id="emptyActivities" style="text-align:center;padding:40px 20px;color:var(--text3);display:none;">
+      <div style="font-size:48px;margin-bottom:12px;">📋</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">No activities yet</div>
+      <div style="font-size:13px;">Tap + to add your first activity</div>
+    </div>
+  </div>
+  
+  <!-- CALENDAR SCREEN -->
+  <div class="screen" id="screen-calendar">
+    <div class="card">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeCalMonth(-1)">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button class="cal-nav" onclick="changeCalMonth(1)">›</button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-hdr">Su</div><div class="cal-day-hdr">Mo</div>
+        <div class="cal-day-hdr">Tu</div><div class="cal-day-hdr">We</div>
+        <div class="cal-day-hdr">Th</div><div class="cal-day-hdr">Fr</div>
+        <div class="cal-day-hdr">Sa</div>
+      </div>
+      <div class="cal-grid" id="calDays" style="margin-top:6px;"></div>
+    </div>
+    
+    <!-- Legend -->
+    <div style="display:flex;gap:16px;font-size:12px;color:var(--text3);margin-bottom:14px;justify-content:center;flex-wrap:wrap;">
+      <span>🟢 All done</span><span>🔴 Missed</span><span>🟡 Partial</span>
+    </div>
+    
+    <!-- Selected Day Activities -->
+    <div id="calDayActivities"></div>
+  </div>
+  
+  <!-- ALARMS SCREEN -->
+  <div class="screen" id="screen-alarms">
+    <div class="section-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Activity Alarms
+    </div>
+    <div id="alarmList"></div>
+    <div id="emptyAlarms" style="text-align:center;padding:40px 20px;color:var(--text3);">
+      <div style="font-size:48px;margin-bottom:12px;">🔔</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">No alarms set</div>
+      <div style="font-size:13px;">Add alarms from activity settings</div>
+    </div>
+  </div>
+  
+  <!-- INSIGHTS SCREEN -->
+  <div class="screen" id="screen-insights">
+    <div class="section-title">Activity Heatmap (Last 28 Days)</div>
+    <div class="card">
+      <div class="heatmap" id="heatmap"></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:10px;font-size:11px;color:var(--text3);">
+        Less
+        <span style="width:12px;height:12px;border-radius:2px;background:var(--bg3);display:inline-block;"></span>
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(108,99,255,0.25);display:inline-block;"></span>
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(108,99,255,0.5);display:inline-block;"></span>
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(108,99,255,0.75);display:inline-block;"></span>
+        <span style="width:12px;height:12px;border-radius:2px;background:var(--accent);display:inline-block;"></span>
+        More
+      </div>
+    </div>
+    
+    <div class="section-title" style="margin-top:4px;">AI Insights</div>
+    <div id="insightsList"></div>
+    
+    <div class="section-title" style="margin-top:4px;">Top Performers</div>
+    <div id="topPerformers"></div>
+    
+    <div class="section-title" style="margin-top:4px;">Needs Attention</div>
+    <div id="needsAttention"></div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openAddModal()">+</button>
+
+<!-- Add Activity Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">New Activity</div>
+    <input type="hidden" id="editId">
+    
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Activity Name</label>
+      <input class="form-input" id="actName" placeholder="e.g. Morning Walk" maxlength="40">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <input class="form-input" id="actCategory" placeholder="e.g. Health, Work, Personal">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Frequency</label>
+      <div class="freq-chips">
+        <div class="freq-chip active" onclick="selectFreq('daily',this)">Daily</div>
+        <div class="freq-chip" onclick="selectFreq('weekly',this)">Weekly</div>
+        <div class="freq-chip" onclick="selectFreq('monthly',this)">Monthly</div>
+      </div>
+      <input type="hidden" id="actFreq" value="daily">
+    </div>
+    
+    <div class="form-group" id="weekdayPickerWrap" style="display:none;">
+      <label class="form-label">Days of Week</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="weekdayPicker">
+        <div class="freq-chip active" data-day="0">Sun</div><div class="freq-chip active" data-day="1">Mon</div>
+        <div class="freq-chip active" data-day="2">Tue</div><div class="freq-chip active" data-day="3">Wed</div>
+        <div class="freq-chip active" data-day="4">Thu</div><div class="freq-chip active" data-day="5">Fri</div>
+        <div class="freq-chip active" data-day="6">Sat</div>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Alarm Time (optional)</label>
+      <input type="time" class="form-input" id="actAlarm">
+    </div>
+    
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <input class="form-input" id="actNotes" placeholder="Optional notes...">
+    </div>
+    
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveActivity()">Save Activity</button>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" id="detailModalContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA STORE =====
+let activities = JSON.parse(localStorage.getItem('at_activities')||'[]');
+let logs = JSON.parse(localStorage.getItem('at_logs')||'{}'); // {actId: {date: 'done'|'missed'}}
+let alarms = JSON.parse(localStorage.getItem('at_alarms')||'[]');
+let currentScreen = 'dashboard';
+let dashFilter = 'today';
+let actFilter = 'all';
+let calYear, calMonth, calSelectedDate;
+let selectedEmoji = '⭐';
+let selectedFreq = 'daily';
+let editingId = null;
+let alarmTimers = [];
+
+const today = () => new Date().toISOString().split('T')[0];
+const todayDate = () => new Date();
+const fmtDate = d => new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+function save() {
+  localStorage.setItem('at_activities', JSON.stringify(activities));
+  localStorage.setItem('at_logs', JSON.stringify(logs));
+  localStorage.setItem('at_alarms', JSON.stringify(alarms));
+}
+
+// ===== EMOJIS =====
+const EMOJIS = ['⭐','🏃','💪','📚','🧘','🥗','💊','🚶','🚴','🏊','✍️','🎯','🧹','💰','🛌','🧴','🌿','☀️','🎵','💻','📝','🏋️','🫁','🧠','❤️','🎨','🍎','☕','💧','🧘‍♀️','📖','🏥','🌙','🎸','🧩','🏡','💼','🦷','👟','🌱'];
+
+// ===== SCREEN SWITCH =====
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.bnav-item')[['dashboard','activities','calendar','alarms','insights'].indexOf(name)].classList.add('active');
+  currentScreen = name;
+  // Hide FAB on alarms/insights
+  document.querySelector('.fab').style.display = ['dashboard','activities'].includes(name) ? 'flex' : 'none';
+  renderScreen(name);
+}
+
+function renderScreen(name) {
+  if(name==='dashboard') renderDashboard();
+  if(name==='activities') renderActivities();
+  if(name==='calendar') renderCalendar();
+  if(name==='alarms') renderAlarms();
+  if(name==='insights') renderInsights();
+}
+
+// ===== INIT =====
+function init() {
+  // Set header date
+  document.getElementById('headerDate').textContent = todayDate().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  
+  // Calendar init
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth();
+  calSelectedDate = today();
+  
+  // Set today's date on range inputs
+  document.getElementById('rangeFrom').value = today();
+  document.getElementById('rangeTo').value = today();
+  
+  // Init emojis
+  const eg = document.getElementById('emojiGrid');
+  EMOJIS.forEach(e => {
+    const b = document.createElement('div');
+    b.className = 'emoji-btn' + (e===selectedEmoji?' selected':'');
+    b.textContent = e;
+    b.onclick = () => { selectedEmoji = e; document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); };
+    eg.appendChild(b);
+  });
+  
+  // Weekday picker toggle
+  document.querySelectorAll('#weekdayPicker .freq-chip').forEach(c => {
+    c.onclick = () => c.classList.toggle('active');
+  });
+  
+  // Schedule alarms
+  scheduleAlarms();
+  
+  renderDashboard();
+  updateStreakBadge();
+}
+
+// ===== DASHBOARD =====
+function setDashFilter(f, el) {
+  dashFilter = f;
+  document.querySelectorAll('#screen-dashboard .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('customRangeBox').style.display = f==='custom' ? 'block' : 'none';
+  renderDashboard();
+}
+
+function getDateRange() {
+  const t = today();
+  if(dashFilter==='today') return [t, t];
+  if(dashFilter==='week') {
+    const d = new Date(); d.setDate(d.getDate()-d.getDay());
+    const start = d.toISOString().split('T')[0];
+    return [start, t];
+  }
+  if(dashFilter==='month') {
+    const d = new Date(); d.setDate(1);
+    return [d.toISOString().split('T')[0], t];
+  }
+  if(dashFilter==='custom') {
+    const f = document.getElementById('rangeFrom').value || t;
+    const to = document.getElementById('rangeTo').value || t;
+    return [f, to];
+  }
+  return [t, t];
+}
+
+function getDatesInRange(start, end) {
+  const dates = [];
+  let d = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  while(d <= e) { dates.push(d.toISOString().split('T')[0]); d.setDate(d.getDate()+1); }
+  return dates;
+}
+
+function shouldActivityOccurOn(act, dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const dow = d.getDay();
+  if(act.freq === 'daily') {
+    if(act.weekdays && act.weekdays.length < 7) return act.weekdays.includes(dow);
+    return true;
+  }
+  if(act.freq === 'weekly') {
+    // Every week on same day as creation
+    if(act.weekdays && act.weekdays.length) return act.weekdays.includes(dow);
+    return dow === new Date(act.created + 'T00:00:00').getDay();
+  }
+  if(act.freq === 'monthly') {
+    return d.getDate() === new Date(act.created + 'T00:00:00').getDate();
+  }
+  return false;
+}
+
+function renderDashboard() {
+  const [start, end] = getDateRange();
+  const dates = getDatesInRange(start, end);
+  
+  let totalOccurrences = 0, doneCount = 0, missedCount = 0;
+  const catStats = {};
+  
+  activities.forEach(act => {
+    if(!catStats[act.freq]) catStats[act.freq] = {total:0,done:0};
+    dates.forEach(date => {
+      if(!shouldActivityOccurOn(act, date)) return;
+      totalOccurrences++;
+      catStats[act.freq].total++;
+      const status = (logs[act.id] || {})[date];
+      if(status === 'done') { doneCount++; catStats[act.freq].done++; }
+      else missedCount++;
+    });
+  });
+  
+  const pct = totalOccurrences > 0 ? Math.round(doneCount/totalOccurrences*100) : 0;
+  
+  // Ring
+  const circ = 2*Math.PI*50;
+  const offset = circ - (pct/100)*circ;
+  document.getElementById('ringCircle').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = pct + '%';
+  const labels = {today:'Today',week:'This Week',month:'This Month',custom:'Custom'};
+  document.getElementById('ringPeriod').textContent = labels[dashFilter]||'';
+  
+  document.getElementById('statDone').textContent = doneCount;
+  document.getElementById('statMissed').textContent = missedCount;
+  document.getElementById('statTotal').textContent = totalOccurrences;
+  document.getElementById('statStreak').textContent = calcStreak();
+  
+  // Category breakdown
+  const cb = document.getElementById('categoryBreakdown');
+  cb.innerHTML = '';
+  const freqColors = {daily:'var(--accent)',weekly:'var(--accent3)',monthly:'var(--accent4)'};
+  Object.entries(catStats).forEach(([freq, s]) => {
+    if(!s.total) return;
+    const p = s.total > 0 ? Math.round(s.done/s.total*100) : 0;
+    cb.innerHTML += `<div class="card-sm" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span class="freq-badge ${freq}" style="font-size:12px;">${freq.charAt(0).toUpperCase()+freq.slice(1)}</span>
+        <span style="font-size:12px;color:var(--text2);">${s.done}/${s.total} done</span>
+        <span style="font-size:14px;font-weight:700;color:${freqColors[freq]||'var(--text)'};">${p}%</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${p}%;background:${freqColors[freq]||'var(--accent)'};"></div></div>
+    </div>`;
+  });
+  
+  // Pending today
+  const pl = document.getElementById('pendingList');
+  pl.innerHTML = '';
+  const t2 = today();
+  const pending = activities.filter(a => {
+    if(!shouldActivityOccurOn(a, t2)) return false;
+    return (logs[a.id]||{})[t2] !== 'done';
+  });
+  if(!pending.length) {
+    pl.innerHTML = '<div class="card-sm" style="text-align:center;color:var(--success);font-weight:600;">🎉 All activities done for today!</div>';
+  } else {
+    pending.slice(0,5).forEach(a => {
+      pl.innerHTML += `<div class="activity-item ${a.freq}" onclick="toggleDone('${a.id}', '${t2}')">
+        <div class="activity-icon">${a.icon}</div>
+        <div class="activity-info">
+          <div class="activity-name">${a.name}</div>
+          <div class="activity-meta"><span class="freq-badge ${a.freq}">${a.freq}</span></div>
+        </div>
+        <div class="done-toggle" id="dt-${a.id}-${t2}">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>`;
+    });
+  }
+}
+
+// ===== ACTIVITIES =====
+function setActFilter(f, el) {
+  actFilter = f;
+  document.querySelectorAll('#screen-activities .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderActivities();
+}
+
+function renderActivities() {
+  const list = document.getElementById('activitiesList');
+  const empty = document.getElementById('emptyActivities');
+  let filtered = actFilter==='all' ? activities : activities.filter(a=>a.freq===actFilter);
+  
+  if(!filtered.length) { list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  
+  // Group by freq
+  if(actFilter==='all') {
+    let html = '';
+    ['daily','weekly','monthly'].forEach(freq => {
+      const grp = activities.filter(a=>a.freq===freq);
+      if(!grp.length) return;
+      const labels = {daily:'Daily',weekly:'Weekly',monthly:'Monthly'};
+      html += `<div class="section-title">${labels[freq]} Activities (${grp.length})</div>`;
+      grp.forEach(a => { html += activityHTML(a); });
+    });
+    list.innerHTML = html;
+  } else {
+    list.innerHTML = filtered.map(activityHTML).join('');
+  }
+}
+
+function activityHTML(a) {
+  const t = today();
+  const status = (logs[a.id]||{})[t];
+  const isDone = status === 'done';
+  const alarmTime = a.alarm ? `<span class="alarm-badge">🔔 ${a.alarm}</span>` : '';
+  return `<div class="activity-item ${a.freq}" onclick="openDetailModal('${a.id}')">
+    <div class="activity-icon">${a.icon}</div>
+    <div class="activity-info">
+      <div class="activity-name">${a.name}</div>
+      <div class="activity-meta">
+        <span class="freq-badge ${a.freq}">${a.freq}</span>
+        ${a.category ? `<span style="color:var(--text3);">${a.category}</span>` : ''}
+        ${alarmTime}
+      </div>
+    </div>
+    <div class="done-toggle ${isDone?'done':''}" onclick="event.stopPropagation();toggleDone('${a.id}','${t}')">
+      <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+  </div>`;
+}
+
+function toggleDone(id, date) {
+  if(!logs[id]) logs[id] = {};
+  const cur = logs[id][date];
+  logs[id][date] = cur === 'done' ? undefined : 'done';
+  if(!logs[id][date]) delete logs[id][date];
+  save();
+  updateStreakBadge();
+  if(currentScreen==='activities') renderActivities();
+  if(currentScreen==='dashboard') renderDashboard();
+  if(currentScreen==='calendar') renderCalendar();
+  
+  const toggle = document.getElementById(`dt-${id}-${date}`);
+  if(toggle) toggle.classList.toggle('done', logs[id]&&logs[id][date]==='done');
+  
+  showToast(logs[id]&&logs[id][date]==='done' ? '✅ Marked as done!' : '↩️ Marked as not done');
+}
+
+// ===== CALENDAR =====
+function changeCalMonth(d) {
+  calMonth += d;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calTitle').textContent = months[calMonth]+' '+calYear;
+  
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const container = document.getElementById('calDays');
+  container.innerHTML = '';
+  
+  for(let i=0; i<firstDay; i++) { const d=document.createElement('div'); d.className='cal-day'; container.appendChild(d); }
+  
+  for(let day=1; day<=daysInMonth; day++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const d = document.createElement('div');
+    d.className = 'cal-day';
+    d.textContent = day;
+    if(dateStr===today()) d.classList.add('today');
+    if(dateStr===calSelectedDate) d.classList.add('selected');
+    
+    // Check activity status
+    const acts = activities.filter(a => shouldActivityOccurOn(a, dateStr));
+    if(acts.length) {
+      const done = acts.filter(a => (logs[a.id]||{})[dateStr]==='done').length;
+      if(done===acts.length) d.classList.add('has-done');
+      else if(done===0 && new Date(dateStr) < todayDate()) d.classList.add('has-missed');
+      else if(done>0) d.classList.add('has-both');
+    }
+    
+    d.onclick = () => { calSelectedDate = dateStr; renderCalendar(); };
+    container.appendChild(d);
+  }
+  
+  renderCalDayActivities();
+}
+
+function renderCalDayActivities() {
+  const el = document.getElementById('calDayActivities');
+  const acts = activities.filter(a => shouldActivityOccurOn(a, calSelectedDate));
+  
+  if(!acts.length) { el.innerHTML=`<div class="card-sm" style="text-align:center;color:var(--text3);padding:20px;">No activities on ${fmtDate(calSelectedDate)}</div>`; return; }
+  
+  el.innerHTML = `<div class="section-title">${fmtDate(calSelectedDate)}</div>` + acts.map(a => {
+    const isDone = (logs[a.id]||{})[calSelectedDate]==='done';
+    return `<div class="activity-item ${a.freq}">
+      <div class="activity-icon">${a.icon}</div>
+      <div class="activity-info">
+        <div class="activity-name">${a.name}</div>
+        <div class="activity-meta"><span class="freq-badge ${a.freq}">${a.freq}</span></div>
+      </div>
+      <div class="done-toggle ${isDone?'done':''}" onclick="toggleDone('${a.id}','${calSelectedDate}');renderCalDayActivities();">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== ALARMS =====
+function renderAlarms() {
+  const el = document.getElementById('alarmList');
+  const empty = document.getElementById('emptyAlarms');
+  const actsWithAlarm = activities.filter(a=>a.alarm);
+  if(!actsWithAlarm.length) { el.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  el.innerHTML = actsWithAlarm.map(a => `<div class="alarm-item">
+    <div class="alarm-time">${a.alarm}</div>
+    <div class="alarm-info">
+      <div style="font-size:14px;font-weight:600;">${a.icon} ${a.name}</div>
+      <div style="font-size:12px;color:var(--text3);">${a.freq} reminder</div>
+    </div>
+    <div class="alarm-toggle on" id="alm-${a.id}" onclick="toggleAlarm('${a.id}')"></div>
+  </div>`).join('');
+}
+
+function toggleAlarm(id) {
+  const act = activities.find(a=>a.id===id);
+  if(!act) return;
+  const el = document.getElementById('alm-'+id);
+  if(el) el.classList.toggle('on');
+  showToast(el&&el.classList.contains('on') ? '🔔 Alarm enabled' : '🔕 Alarm disabled');
+}
+
+function scheduleAlarms() {
+  alarmTimers.forEach(t => clearTimeout(t));
+  alarmTimers = [];
+  if(!('Notification' in window)) return;
+  
+  activities.filter(a=>a.alarm).forEach(a => {
+    const [h, m] = a.alarm.split(':').map(Number);
+    const now = new Date();
+    const alarm = new Date();
+    alarm.setHours(h, m, 0, 0);
+    if(alarm <= now) alarm.setDate(alarm.getDate()+1);
+    const delay = alarm - now;
+    const t = setTimeout(() => {
+      if(Notification.permission==='granted') {
+        new Notification('Activity Reminder 🔔', { body: `Time for: ${a.icon} ${a.name}`, icon: '/favicon.ico' });
+      }
+    }, delay);
+    alarmTimers.push(t);
+  });
+}
+
+// ===== INSIGHTS =====
+function renderInsights() {
+  // Heatmap
+  const hm = document.getElementById('heatmap');
+  hm.innerHTML = '';
+  for(let i=27; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    const acts = activities.filter(a=>shouldActivityOccurOn(a,ds));
+    const done = acts.filter(a=>(logs[a.id]||{})[ds]==='done').length;
+    const ratio = acts.length > 0 ? done/acts.length : 0;
+    const lvl = ratio>=0.9?'l4':ratio>=0.6?'l3':ratio>=0.3?'l2':done>0?'l1':'';
+    hm.innerHTML += `<div class="heat-cell ${lvl}" title="${ds}: ${done}/${acts.length} done"></div>`;
+  }
+  
+  // Insights
+  const ins = document.getElementById('insightsList');
+  ins.innerHTML = '';
+  const streak = calcStreak();
+  const weekActs = activities.filter(a=>{
+    const last7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().split('T')[0];});
+    const occ = last7.filter(d=>shouldActivityOccurOn(a,d));
+    const done = occ.filter(d=>(logs[a.id]||{})[d]==='done').length;
+    return occ.length > 0 && done/occ.length >= 0.8;
+  });
+  
+  if(streak >= 3) ins.innerHTML += `<div class="insight-card"><div class="insight-icon">🔥</div><div class="insight-text"><strong>${streak}-day streak!</strong> You're on fire. Keep it going to build a lasting habit.</div></div>`;
+  if(weekActs.length) ins.innerHTML += `<div class="insight-card"><div class="insight-icon">🏆</div><div class="insight-text"><strong>${weekActs.length} activity${weekActs.length>1?'ies':''}</strong> with 80%+ completion this week. Excellent consistency!</div></div>`;
+  if(activities.filter(a=>a.freq==='daily').length >= 3) ins.innerHTML += `<div class="insight-card"><div class="insight-icon">💡</div><div class="insight-text"><strong>Tip:</strong> You have many daily activities. Try batching similar ones (e.g. morning routine) for better adherence.</div></div>`;
+  if(!ins.innerHTML) ins.innerHTML = `<div class="insight-card"><div class="insight-icon">🌱</div><div class="insight-text">Start tracking to get personalized insights. Add some activities and log them for a few days!</div></div>`;
+  
+  // Top performers
+  const tp = document.getElementById('topPerformers');
+  const scores = activities.map(a => {
+    const last14 = [...Array(14)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().split('T')[0];});
+    const occ = last14.filter(d=>shouldActivityOccurOn(a,d));
+    const done = occ.filter(d=>(logs[a.id]||{})[d]==='done').length;
+    return { a, pct: occ.length?Math.round(done/occ.length*100):0, done, total:occ.length };
+  }).filter(s=>s.total>0).sort((a,b)=>b.pct-a.pct);
+  
+  tp.innerHTML = scores.slice(0,3).map(s=>`<div class="card-sm"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:20px;">${s.a.icon}</span><span style="font-weight:600;flex:1;">${s.a.name}</span><span style="font-size:15px;font-weight:700;color:var(--success);">${s.pct}%</span></div><div class="prog-wrap"><div class="prog-fill" style="width:${s.pct}%;background:var(--success);"></div></div></div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:10px 0;">No data yet</div>';
+  
+  const na = document.getElementById('needsAttention');
+  na.innerHTML = scores.slice().reverse().slice(0,3).filter(s=>s.pct<60).map(s=>`<div class="card-sm"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:20px;">${s.a.icon}</span><span style="font-weight:600;flex:1;">${s.a.name}</span><span style="font-size:15px;font-weight:700;color:var(--danger);">${s.pct}%</span></div><div class="prog-wrap"><div class="prog-fill" style="width:${s.pct}%;background:var(--danger);"></div></div></div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:10px 0;">All activities looking good! 🎉</div>';
+}
+
+// ===== STREAK =====
+function calcStreak() {
+  let streak = 0;
+  const d = new Date();
+  while(true) {
+    const ds = d.toISOString().split('T')[0];
+    const acts = activities.filter(a=>shouldActivityOccurOn(a,ds));
+    if(!acts.length) { d.setDate(d.getDate()-1); if(streak===0&&d<new Date(d.getFullYear()-1,0,1)) break; continue; }
+    const done = acts.filter(a=>(logs[a.id]||{})[ds]==='done').length;
+    if(done < acts.length * 0.5) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+    if(streak > 365) break;
+  }
+  return streak;
+}
+
+function updateStreakBadge() {
+  const s = calcStreak();
+  document.getElementById('streakBadge').textContent = `🔥 ${s} day${s!==1?'s':''}`;
+}
+
+// ===== MODAL =====
+function openAddModal(actId=null) {
+  editingId = actId;
+  document.getElementById('modalTitle').textContent = actId ? 'Edit Activity' : 'New Activity';
+  
+  if(actId) {
+    const a = activities.find(x=>x.id===actId);
+    if(a) {
+      document.getElementById('actName').value = a.name;
+      document.getElementById('actCategory').value = a.category||'';
+      document.getElementById('actAlarm').value = a.alarm||'';
+      document.getElementById('actNotes').value = a.notes||'';
+      selectedEmoji = a.icon;
+      selectedFreq = a.freq;
+      document.getElementById('actFreq').value = a.freq;
+      document.querySelectorAll('.emoji-btn').forEach(b=>{b.classList.toggle('selected',b.textContent===a.icon);});
+      document.querySelectorAll('#addModal .freq-chip').forEach(c=>{c.classList.toggle('active',c.textContent.toLowerCase()===a.freq);});
+    }
+  } else {
+    document.getElementById('actName').value='';
+    document.getElementById('actCategory').value='';
+    document.getElementById('actAlarm').value='';
+    document.getElementById('actNotes').value='';
+    selectedEmoji='⭐'; selectedFreq='daily';
+    document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.remove('selected'));
+    document.querySelector('.emoji-btn').classList.add('selected');
+    document.querySelectorAll('#addModal .freq-chips .freq-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
+    document.getElementById('actFreq').value='daily';
+    document.getElementById('weekdayPickerWrap').style.display='none';
+  }
+  
+  document.getElementById('addModal').classList.add('open');
+  requestAnimationFrame(()=>document.getElementById('actName').focus());
+}
+
+function closeModal() {
+  document.getElementById('addModal').classList.remove('open');
+  document.getElementById('detailModal').classList.remove('open');
+}
+
+function selectFreq(f, el) {
+  selectedFreq = f;
+  document.getElementById('actFreq').value = f;
+  document.querySelectorAll('#addModal .freq-chips .freq-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('weekdayPickerWrap').style.display = f!=='monthly' ? 'block' : 'none';
+}
+
+function saveActivity() {
+  const name = document.getElementById('actName').value.trim();
+  if(!name) { showToast('⚠️ Please enter activity name'); return; }
+  
+  const weekdays = [...document.querySelectorAll('#weekdayPicker .freq-chip.active')].map(c=>+c.dataset.day);
+  const act = {
+    id: editingId || Date.now().toString(),
+    name, icon: selectedEmoji,
+    freq: document.getElementById('actFreq').value,
+    category: document.getElementById('actCategory').value.trim(),
+    alarm: document.getElementById('actAlarm').value,
+    notes: document.getElementById('actNotes').value.trim(),
+    weekdays: weekdays,
+    created: editingId ? (activities.find(a=>a.id===editingId)||{}).created || today() : today()
+  };
+  
+  if(editingId) {
+    const idx = activities.findIndex(a=>a.id===editingId);
+    if(idx>=0) activities[idx] = act;
+  } else {
+    activities.push(act);
+  }
+  
+  save();
+  scheduleAlarms();
+  closeModal();
+  showToast(editingId ? '✅ Activity updated!' : '🎉 Activity added!');
+  editingId = null;
+  renderScreen(currentScreen);
+  updateStreakBadge();
+  
+  // Request notification permission
+  if(act.alarm && 'Notification' in window && Notification.permission==='default') {
+    Notification.requestPermission();
+  }
+}
+
+function openDetailModal(id) {
+  const a = activities.find(x=>x.id===id);
+  if(!a) return;
+  
+  const last30 = [...Array(30)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toISOString().split('T')[0];}).reverse();
+  const occ = last30.filter(d=>shouldActivityOccurOn(a,d));
+  const done = occ.filter(d=>(logs[a.id]||{})[d]==='done').length;
+  const pct = occ.length ? Math.round(done/occ.length*100) : 0;
+  
+  const histHTML = last30.filter(d=>shouldActivityOccurOn(a,d)).slice(-7).reverse().map(d=>{
+    const st = (logs[a.id]||{})[d]==='done';
+    const future = new Date(d) > todayDate();
+    return `<div class="history-item">
+      <div class="history-dot ${st?'done':future?'':'missed'}"></div>
+      <span style="color:var(--text2);flex:1;">${fmtDate(d)}</span>
+      <span style="font-size:12px;font-weight:600;color:${st?'var(--success)':future?'var(--text3)':'var(--danger)'};">${st?'Done':future?'Upcoming':'Missed'}</span>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('detailModalContent').innerHTML = `
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+      <div style="font-size:40px;">${a.icon}</div>
+      <div>
+        <div style="font-size:20px;font-weight:700;">${a.name}</div>
+        <div style="display:flex;gap:8px;margin-top:4px;"><span class="freq-badge ${a.freq}">${a.freq}</span>${a.category?`<span style="font-size:12px;color:var(--text3);">${a.category}</span>`:''}</div>
+      </div>
+    </div>
+    ${a.alarm?`<div style="margin-bottom:14px;"><span class="alarm-badge">🔔 Alarm at ${a.alarm}</span></div>`:''}
+    ${a.notes?`<div style="font-size:13px;color:var(--text2);margin-bottom:14px;padding:10px;background:var(--bg3);border-radius:var(--radius-sm);">${a.notes}</div>`:''}
+    <div class="stats-grid" style="margin-bottom:14px;">
+      <div class="stat-card"><div class="stat-val green">${pct}%</div><div class="stat-lbl">30-day rate</div></div>
+      <div class="stat-card"><div class="stat-val purple">${done}</div><div class="stat-lbl">Done (30d)</div></div>
+    </div>
+    <div class="section-title">Last 7 Occurrences</div>
+    <div>${histHTML}</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="deleteActivity('${a.id}')">🗑 Delete</button>
+      <button class="btn btn-primary btn-sm" style="flex:2;" onclick="closeModal();openAddModal('${a.id}')">✏️ Edit</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function deleteActivity(id) {
+  if(!confirm('Delete this activity?')) return;
+  activities = activities.filter(a=>a.id!==id);
+  delete logs[id];
+  save();
+  closeModal();
+  showToast('🗑 Activity deleted');
+  renderScreen(currentScreen);
+  updateStreakBadge();
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// Close modals on overlay click
+document.getElementById('addModal').addEventListener('click', e=>{ if(e.target===document.getElementById('addModal')) closeModal(); });
+document.getElementById('detailModal').addEventListener('click', e=>{ if(e.target===document.getElementById('detailModal')) closeModal(); });
+
+// ===== SAMPLE DATA =====
+function loadSampleData() {
+  if(activities.length > 0) return;
+  activities = [
+    {id:'s1',name:'Morning Walk',icon:'🚶',freq:'daily',category:'Health',alarm:'07:00',notes:'30 min walk',weekdays:[0,1,2,3,4,5,6],created:today()},
+    {id:'s2',name:'Read Book',icon:'📚',freq:'daily',category:'Learning',alarm:'21:00',notes:'At least 20 pages',weekdays:[0,1,2,3,4,5,6],created:today()},
+    {id:'s3',name:'Workout',icon:'💪',freq:'weekly',category:'Health',alarm:'06:30',notes:'Gym session',weekdays:[1,3,5],created:today()},
+    {id:'s4',name:'Budget Review',icon:'💰',freq:'monthly',category:'Finance',alarm:'',notes:'Review monthly expenses',weekdays:[],created:today()},
+    {id:'s5',name:'Meditation',icon:'🧘',freq:'daily',category:'Wellness',alarm:'06:00',notes:'10 min mindfulness',weekdays:[0,1,2,3,4,5,6],created:today()},
+  ];
+  // Add some logs
+  for(let i=0;i<14;i++) {
+    const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().split('T')[0];
+    ['s1','s2','s5'].forEach(id=>{
+      if(Math.random()>0.3){if(!logs[id])logs[id]={};logs[id][ds]='done';}
+    });
+    if(i%7===0){if(!logs['s3'])logs['s3']={};logs['s3'][ds]='done';}
+  }
+  save();
+}
+
+loadSampleData();
+init();
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
